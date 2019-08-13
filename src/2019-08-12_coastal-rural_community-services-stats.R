@@ -7,7 +7,7 @@
 #' output: 
 #'   html_document: 
 #'     keep_md: yes
-#'     code_folding: hide
+#'     code_folding: show
 #'     toc: true
 #'     toc_float: true
 #' ---
@@ -28,6 +28,8 @@ setup_denodo()
 
 #+ analysis
 
+
+#****************************************************************
 # 2) validate using sql server: -------
 #' ## 2) validate using sql server: 
 
@@ -93,7 +95,7 @@ sum(df2.sh_sql_serv$is_alc)/nrow(df2.sh_sql_serv)  # 0.2056075
 
 
 
-
+#****************************************************************
 # 3) validate using Denodo: ------------
 #' ## 3) validate using Denodo: 
 
@@ -123,3 +125,86 @@ df3.sh_census <-
 sum(df3.sh_census$is_alc)/nrow(df3.sh_census)  # 0.2056075
 
 #' Result matches what we got from SQL Server 
+#' 
+
+
+
+
+
+
+#****************************************************************
+# 4) function to pull ALC rate -----
+alc_rate_function <- function(site_short_name, 
+                              start_date_id, 
+                              end_date_id, 
+                              alc_identifier1 = "ALC", 
+                              alc_identifier2 = "ALT LEVEL"){
+  # inputs: 
+  # dates as integers (not quoted)
+  
+  df <- 
+    vw_census %>% 
+    filter(facility_short_name == site_short_name, 
+           census_date_id <= end_date_id, 
+           census_date_id >= start_date_id) %>% 
+    select(facility_short_name, 
+           census_date_id, 
+           patient_id, 
+           med_service_desc, 
+           alc_category_desc) %>%
+    
+    mutate(is_alc = ifelse(str_detect(med_service_desc, alc_identifier1)|
+                             str_detect(alc_category_desc, alc_identifier1)|
+                             str_detect(med_service_desc, alc_identifier2),
+                           1, 0)) %>% 
+    collect %>% 
+    arrange(patient_id, 
+            census_date_id)
+  
+  # print(df)
+  # print(sum(df$is_alc))
+  return(sum(df$is_alc)/nrow(df))
+  
+}
+
+# fn test: 
+alc_rate_function("SMH", "20190719", "20190725") == sum(df3.sh_census$is_alc)/nrow(df3.sh_census)
+         
+alc_rate_function("SGH",
+                  "20170719",
+                  "20180725", 
+                  alc_identifier1 = "Assessment") 
+
+
+
+
+
+#****************************************************************
+# 5) Raw ALC rates for PRGH, SGH, SH: --------
+
+df4.all_sites_alc <- 
+tibble::tribble(
+   ~site, ~fy_start,  ~fy_end,     ~alc_identifier1,
+  "PRGH",  20180401, 20190331,               "ALC",
+  "PRGH",  20170401, 20180331,               "ALC",
+  "PRGH",  20160401, 20170331,               "ALC",
+   "SMH",  20180401, 20190331,               "ALC",
+   "SMH",  20170401, 20180331,               "ALC",
+   "SMH",  20160401, 20170331,               "ALC",
+   "SGH",  20180401, 20190331,        "Assessment",
+   "SGH",  20170401, 20180331,        "Assessment",
+   "SGH",  20160401, 20170331,        "Assessment"
+  )
+
+
+
+df4.all_sites_alc <- 
+  df4.all_sites_alc %>% 
+  mutate(alc_rate = pmap(list(site, 
+                              fy_start, 
+                              fy_end, 
+                              alc_identifier1), 
+                         alc_rate_function))
+
+
+
