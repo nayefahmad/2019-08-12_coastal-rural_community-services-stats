@@ -19,6 +19,7 @@ library(odbc)
 library(dbplyr)
 library(tidyverse)
 library(stringr)
+library(here)
 library(denodoExtractor)
 
 setup_denodo()
@@ -201,11 +202,33 @@ tibble::tribble(
 
 df4.all_sites_alc <- 
   df4.all_sites_alc %>% 
-  mutate(alc_rate = pmap(list(site, 
+  mutate(alc_rate = pmap_dbl(list(site, 
                               fy_start, 
                               fy_end, 
                               alc_identifier1), 
                          alc_rate_function))
 
+str(df4.all_sites_alc)
+
+
+
+
+# quick plot: 
+df4.all_sites_alc %>% 
+  ggplot(aes(x = lubridate::ymd(fy_start), 
+             y = alc_rate, 
+             group = site, 
+             col = site)) + 
+  geom_line() + 
+  geom_point()
+
+
+#***********************************************************
+# 6) output: --------
+write_csv(df4.all_sites_alc,
+          here::here("results", 
+                     "dst", 
+                     "2019-08-13_coastal-rural_alc-rates.csv"))
+             
 
 
