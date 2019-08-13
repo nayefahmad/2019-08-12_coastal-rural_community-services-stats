@@ -154,8 +154,9 @@ alc_rate_function <- function(site_short_name,
            alc_category_desc) %>%
     
     mutate(is_alc = ifelse(str_detect(med_service_desc, alc_identifier1)|
+                             str_detect(med_service_desc, alc_identifier2)| 
                              str_detect(alc_category_desc, alc_identifier1)|
-                             str_detect(med_service_desc, alc_identifier2),
+                             alc_category_desc != "Not provided",
                            1, 0)) %>% 
     collect %>% 
     arrange(patient_id, 
