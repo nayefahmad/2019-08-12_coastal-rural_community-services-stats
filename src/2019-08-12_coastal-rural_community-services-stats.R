@@ -34,7 +34,9 @@ setup_denodo()
 # 2) validate using sql server: -------
 #' ## 2) validate using sql server: 
 
-#' See the iCare reports saved in the docs folder of this repo
+#' See the iCare reports saved in the docs folder of this repo. I'm not sure
+#' what filters are applied there; here, we'll just use raw ALC rates, with no
+#' exclusions for nursing unit, patient age, etc.
 
 # connections: 
 cnx2 <- dbConnect(odbc::odbc(),
@@ -199,7 +201,7 @@ tibble::tribble(
   )
 
 
-
+# map function across all fiscal years: 
 df4.all_sites_alc <- 
   df4.all_sites_alc %>% 
   mutate(alc_rate = pmap_dbl(list(site, 
